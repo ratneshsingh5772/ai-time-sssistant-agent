@@ -137,7 +137,7 @@ Open this file in your browser and test!
 **Solution:**
 - Check `application.properties` has the correct API key:
   ```
-  google.api.key=AIzaSyDFClWTJJ_ED2Uxh3QYdUjw7pLE4Xp2jwE
+  google.api.key=GOOGLE API KEY
   ```
 
 ### Issue 4: Empty Response
