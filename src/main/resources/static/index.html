@@ -1,0 +1,471 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Agent - Time Assistant</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            width: 100%;
+            max-width: 800px;
+            height: 90vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 25px 30px;
+            text-align: center;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .header h1 {
+            font-size: 28px;
+            margin-bottom: 5px;
+        }
+
+        .header p {
+            font-size: 14px;
+            opacity: 0.9;
+        }
+
+        .chat-container {
+            flex: 1;
+            overflow-y: auto;
+            padding: 30px;
+            background: #f7f9fc;
+        }
+
+        .message {
+            margin-bottom: 20px;
+            animation: fadeIn 0.3s ease-in;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .message.user {
+            text-align: right;
+        }
+
+        .message-content {
+            display: inline-block;
+            padding: 15px 20px;
+            border-radius: 18px;
+            max-width: 70%;
+            word-wrap: break-word;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+
+        .message.user .message-content {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-bottom-right-radius: 5px;
+        }
+
+        .message.ai .message-content {
+            background: white;
+            color: #333;
+            border-bottom-left-radius: 5px;
+        }
+
+        .message-label {
+            font-size: 12px;
+            margin-bottom: 5px;
+            color: #666;
+            font-weight: 600;
+        }
+
+        .input-container {
+            padding: 20px 30px;
+            background: white;
+            border-top: 1px solid #e0e0e0;
+            display: flex;
+            gap: 15px;
+        }
+
+        #messageInput {
+            flex: 1;
+            padding: 15px 20px;
+            border: 2px solid #e0e0e0;
+            border-radius: 25px;
+            font-size: 16px;
+            outline: none;
+            transition: border-color 0.3s;
+        }
+
+        #messageInput:focus {
+            border-color: #667eea;
+        }
+
+        #sendButton {
+            padding: 15px 35px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 25px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        #sendButton:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        #sendButton:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .loading {
+            display: inline-block;
+            padding: 15px 20px;
+            background: white;
+            border-radius: 18px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+
+        .loading-dots {
+            display: inline-flex;
+            gap: 5px;
+        }
+
+        .loading-dots span {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #667eea;
+            animation: bounce 1.4s infinite ease-in-out;
+        }
+
+        .loading-dots span:nth-child(1) {
+            animation-delay: -0.32s;
+        }
+
+        .loading-dots span:nth-child(2) {
+            animation-delay: -0.16s;
+        }
+
+        @keyframes bounce {
+            0%, 80%, 100% {
+                transform: scale(0);
+            }
+            40% {
+                transform: scale(1);
+            }
+        }
+
+        .suggestions {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-bottom: 20px;
+        }
+
+        .suggestion-btn {
+            padding: 10px 20px;
+            background: white;
+            color: #667eea;
+            border: 2px solid #667eea;
+            border-radius: 20px;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .suggestion-btn:hover {
+            background: #667eea;
+            color: white;
+            transform: translateY(-2px);
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 50px 20px;
+            color: #666;
+        }
+
+        .empty-state h2 {
+            font-size: 24px;
+            margin-bottom: 15px;
+            color: #667eea;
+        }
+
+        .empty-state p {
+            font-size: 16px;
+            margin-bottom: 30px;
+        }
+
+        .status-indicator {
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #4caf50;
+            margin-right: 8px;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% {
+                opacity: 1;
+            }
+            50% {
+                opacity: 0.5;
+            }
+        }
+
+        .error-message {
+            background: #ffebee;
+            color: #c62828;
+            padding: 15px 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            border-left: 4px solid #c62828;
+        }
+
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: #f1f1f1;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #667eea;
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: #764ba2;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🤖 AI Time Assistant</h1>
+            <p><span class="status-indicator"></span>Powered by Google Gemini AI</p>
+        </div>
+
+        <div class="chat-container" id="chatContainer">
+            <div class="empty-state">
+                <h2>👋 Welcome to AI Time Assistant!</h2>
+                <p>Ask me about the current time in any city around the world.</p>
+
+                <div class="suggestions">
+                    <button class="suggestion-btn" onclick="sendSuggestion('What is the time in Delhi?')">
+                        🇮🇳 Time in Delhi
+                    </button>
+                    <button class="suggestion-btn" onclick="sendSuggestion('What is the time in New York?')">
+                        🇺🇸 Time in New York
+                    </button>
+                    <button class="suggestion-btn" onclick="sendSuggestion('What is the time in Tokyo?')">
+                        🇯🇵 Time in Tokyo
+                    </button>
+                    <button class="suggestion-btn" onclick="sendSuggestion('What is the time in London?')">
+                        🇬🇧 Time in London
+                    </button>
+                    <button class="suggestion-btn" onclick="sendSuggestion('What is the time in Paris?')">
+                        🇫🇷 Time in Paris
+                    </button>
+                    <button class="suggestion-btn" onclick="sendSuggestion('Hello! How are you?')">
+                        👋 Say Hello
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div class="input-container">
+            <input
+                type="text"
+                id="messageInput"
+                placeholder="Ask me about time in any city..."
+                onkeypress="handleKeyPress(event)"
+            />
+            <button id="sendButton" onclick="sendMessage()">Send</button>
+        </div>
+    </div>
+
+    <script>
+        let isWaiting = false;
+
+        function addMessage(text, isUser) {
+            const chatContainer = document.getElementById('chatContainer');
+
+            // Remove empty state if it exists
+            const emptyState = chatContainer.querySelector('.empty-state');
+            if (emptyState) {
+                emptyState.remove();
+            }
+
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${isUser ? 'user' : 'ai'}`;
+
+            const labelDiv = document.createElement('div');
+            labelDiv.className = 'message-label';
+            labelDiv.textContent = isUser ? 'You' : '🤖 AI Assistant';
+
+            const contentDiv = document.createElement('div');
+            contentDiv.className = 'message-content';
+            contentDiv.textContent = text;
+
+            messageDiv.appendChild(labelDiv);
+            messageDiv.appendChild(contentDiv);
+            chatContainer.appendChild(messageDiv);
+
+            // Scroll to bottom
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+        }
+
+        function showLoading() {
+            const chatContainer = document.getElementById('chatContainer');
+            const loadingDiv = document.createElement('div');
+            loadingDiv.className = 'message ai';
+            loadingDiv.id = 'loadingMessage';
+
+            const labelDiv = document.createElement('div');
+            labelDiv.className = 'message-label';
+            labelDiv.textContent = '🤖 AI Assistant';
+
+            const contentDiv = document.createElement('div');
+            contentDiv.className = 'loading';
+            contentDiv.innerHTML = `
+                <div class="loading-dots">
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                </div>
+            `;
+
+            loadingDiv.appendChild(labelDiv);
+            loadingDiv.appendChild(contentDiv);
+            chatContainer.appendChild(loadingDiv);
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+        }
+
+        function removeLoading() {
+            const loadingMessage = document.getElementById('loadingMessage');
+            if (loadingMessage) {
+                loadingMessage.remove();
+            }
+        }
+
+        function showError(message) {
+            const chatContainer = document.getElementById('chatContainer');
+            const errorDiv = document.createElement('div');
+            errorDiv.className = 'error-message';
+            errorDiv.textContent = message;
+            chatContainer.appendChild(errorDiv);
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+        }
+
+        async function sendMessage() {
+            if (isWaiting) return;
+
+            const input = document.getElementById('messageInput');
+            const message = input.value.trim();
+
+            if (!message) return;
+
+            // Add user message
+            addMessage(message, true);
+            input.value = '';
+
+            // Disable input and show loading
+            isWaiting = true;
+            document.getElementById('sendButton').disabled = true;
+            document.getElementById('messageInput').disabled = true;
+            showLoading();
+
+            try {
+                const response = await fetch('/api/chat', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ message: message })
+                });
+
+                removeLoading();
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                const data = await response.json();
+
+                // Check for rate limit error
+                if (data.reply && data.reply.includes('429 Too Many Requests')) {
+                    showError('⚠️ Rate limit reached. Please wait 2-3 minutes before trying again.');
+                    addMessage('I apologize, but I\'ve reached my rate limit. Please wait a couple of minutes and try again. Google\'s free API allows 15 requests per minute.', false);
+                } else {
+                    addMessage(data.reply, false);
+                }
+
+            } catch (error) {
+                removeLoading();
+                console.error('Error:', error);
+                showError('❌ Failed to connect to the AI service. Please make sure the server is running.');
+                addMessage('Sorry, I encountered an error. Please make sure the server is running on port 8081.', false);
+            } finally {
+                isWaiting = false;
+                document.getElementById('sendButton').disabled = false;
+                document.getElementById('messageInput').disabled = false;
+                document.getElementById('messageInput').focus();
+            }
+        }
+
+        function sendSuggestion(text) {
+            document.getElementById('messageInput').value = text;
+            sendMessage();
+        }
+
+        function handleKeyPress(event) {
+            if (event.key === 'Enter' && !isWaiting) {
+                sendMessage();
+            }
+        }
+
+        // Focus input on load
+        window.onload = function() {
+            document.getElementById('messageInput').focus();
+        };
+    </script>
+</body>
+</html>
+
